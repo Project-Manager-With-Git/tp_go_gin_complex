@@ -1,0 +1,59 @@
+basePath: /
+definitions:
+  user.User:
+    properties:
+      ID:
+        type: integer
+      Name:
+        type: string
+    type: object
+  usernamespace.UserCreateQuery:
+    properties:
+      Name:
+        type: string
+    type: object
+host: localhost
+info:
+  contact:
+    email: hsz1273327@gmail.com
+    name: hsz
+  description: 测试
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: tp_go_gin_complex
+  version: "1.0"
+paths:
+  /v1/api/user:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 获取用户列表信息
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户名
+        in: body
+        name: name
+        required: true
+        schema:
+          $ref: '#/definitions/usernamespace.UserCreateQuery'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"Name":"1234","ID":1}'
+          schema:
+            $ref: '#/definitions/user.User'
+      summary: 创建新用户
+      tags:
+      - user
+swagger: "2.0"

@@ -14,10 +14,14 @@ import (
 	"tp_go_gin_complex/apis"
 	"tp_go_gin_complex/models"
 
+	_ "tp_go_gin_complex/docs"
+
 	log "github.com/Golang-Tools/loggerhelper"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	ginlogrus "github.com/toorop/gin-logrus"
 )
 
@@ -27,18 +31,19 @@ type Serv struct {
 	Log_Level              string   `json:"log_level" jsonschema:"required,title=l,description=log等级,enum=TRACE,enum=DEBUG,enum=INFO,enum=WARN,enum=ERROR"`
 	Address                string   `json:"address" jsonschema:"required,title=a,description=启动地址"`
 	Published_Address      string   `json:"published_address" jsonschema:"title=p,description=外部访问地址"`
+	DB_URL                 string   `json:"db_url" jsonschema:"required,description=数据库连接url"`
 	Cros_Allow_Origins     []string `json:"cros_allow_origins" jsonschema:"description=跨域允许的域名"`
 	Cros_Allow_Credentials bool     `json:"cros_allow_credentials" jsonschema:"description=跨域是否需要证书"`
 	Cros_Allow_Headers     []string `json:"cros_allow_headers" jsonschema:"description=跨域允许的头"`
 	Cros_Expose_Headers    []string `json:"cros_expose_headers" jsonschema:"description=跨域暴露的头"`
+	Static_Page_Dir        string   `json:"static_page_dir" jsonschema:"description=静态页面存放的文件夹"`
+	Static_Source_Dir      string   `json:"static_source_dir" jsonschema:"description=静态资源存放的文件夹"`
 	Serv_Cert_Path         string   `json:"serv_cert_path" jsonschema:"description=服务证书位置"`
 	Serv_Key_Path          string   `json:"serv_key_path" jsonschema:"description=服务证书的私钥位置"`
 	Ca_Cert_Path           string   `json:"ca_cert_path" jsonschema:"description=根证书位置"`
 	Client_Crl_Path        string   `json:"client_crl_path" jsonschema:"description=客户端证书黑名单"`
-	Static_Page_Dir        string   `json:"static_page_dir" jsonschema:"description=静态页面存放的文件夹"`
-	Static_Source_Dir      string   `json:"static_source_dir" jsonschema:"description=静态资源存放的文件夹"`
-	DB_URL                 string   `json:"db_url" jsonschema:"description=数据库连接url"`
-	app                    *gin.Engine
+
+	app *gin.Engine
 }
 
 func (s *Serv) runserv() {
@@ -119,10 +124,7 @@ func (s *Serv) Main() {
 	s.app = gin.New()
 
 	//初始化数据模型
-	if s.DB_URL != "" {
-		db := models.Init(s.DB_URL)
-		defer db.Close()
-	}
+	models.Init(s.DB_URL)
 
 	// 跨域
 	// router.Router.Use(cors.Default())
@@ -163,8 +165,22 @@ func (s *Serv) Main() {
 		s.app.Use(static.Serve("/static", static.LocalFile(s.Static_Source_Dir, false)))
 	}
 
+	url := ginSwagger.URL("http://localhost:5000/swagger/doc.json") // The url pointing to API definition
+	s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+
 	apis.Init(s.app)
 
 	// 启动服务
 	s.runserv()
+}
+
+var ServNode = Serv{
+	App_Version:         "0.0.1",
+	App_Name:            "tp_go_gin_complex",
+	Log_Level:           "DEBUG",
+	Address:             "0.0.0.0:5000",
+	DB_URL:              "sqlite://:memory:",
+	Cros_Allow_Origins:  []string{},
+	Cros_Allow_Headers:  []string{},
+	Cros_Expose_Headers: []string{},
 }

@@ -11,6 +11,11 @@ import (
 type UserListSource struct {
 }
 
+// @Summary 获取用户列表信息
+// @Tags user
+// @Produce  json
+// @Success 200 {string} json
+// @Router /v1/api/user [get]
 func (s *UserListSource) Get(ctx *gin.Context) {
 	cnt, err := user.Count(models.DB)
 	if err != nil {
@@ -50,6 +55,13 @@ type UserCreateQuery struct {
 	Name string `json:"Name"`
 }
 
+// @Summary 创建新用户
+// @Tags user
+// @accept json
+// @Produce json
+// @Param name body UserCreateQuery true "用户名"
+// @Success 200 {object} user.User "{"Name":"1234","ID":1}"
+// @Router /v1/api/user [post]
 func (s *UserListSource) Post(ctx *gin.Context) {
 	// 请求参数校验
 	uinput := UserCreateQuery{}
