@@ -6,6 +6,7 @@ import (
 	"tp_go_gin_complex/models/user"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type UserListSource struct {
@@ -14,12 +15,12 @@ type UserListSource struct {
 // @Summary 获取用户列表信息
 // @Tags user
 // @Produce  json
-// @Success 200 {string} json
+// @Success 200 {object} json
 // @Router /v1/api/user [get]
-func (s *UserListSource) Get(ctx *gin.Context) {
+func (s *UserListSource) Get(c *gin.Context) {
 	cnt, err := user.Count(models.DB)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"Error": err.Error()})
+		c.JSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
 		return
 	}
 	result := map[string]interface{}{
@@ -48,11 +49,7 @@ func (s *UserListSource) Get(ctx *gin.Context) {
 			},
 		},
 	}
-	ctx.JSON(200, gin.H{"Result": result})
-}
-
-type UserCreateQuery struct {
-	Name string `json:"Name"`
+	c.JSON(200, gin.H{"Result": result})
 }
 
 // @Summary 创建新用户
@@ -62,21 +59,23 @@ type UserCreateQuery struct {
 // @Param name body UserCreateQuery true "用户名"
 // @Success 200 {object} user.User "{"Name":"1234","ID":1}"
 // @Router /v1/api/user [post]
-func (s *UserListSource) Post(ctx *gin.Context) {
+func (s *UserListSource) Post(c *gin.Context) {
 	// 请求参数校验
-	uinput := UserCreateQuery{}
-	err := ctx.ShouldBindJSON(&uinput)
+	uinput := &UserCreateQuery{}
+	err := c.ShouldBindBodyWith(uinput, binding.JSON)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"Error": err.Error()})
+		c.JSON(http.StatusBadRequest, &ResultResponse{Message: err.Error()})
+		return
 	}
+
 	//创建用户
 	u := &user.User{
 		Name: uinput.Name,
 	}
 	err = u.Save(models.DB)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"Error": err.Error()})
+		c.JSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
 		return
 	}
-	ctx.JSON(200, u)
+	c.JSON(200, u)
 }
