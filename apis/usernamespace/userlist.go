@@ -20,7 +20,7 @@ type UserListSource struct {
 func (s *UserListSource) Get(c *gin.Context) {
 	cnt, err := user.Count(models.DB)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
+		c.PureJSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
 		return
 	}
 	result := map[string]interface{}{
@@ -49,7 +49,7 @@ func (s *UserListSource) Get(c *gin.Context) {
 			},
 		},
 	}
-	c.JSON(200, gin.H{"Result": result})
+	c.PureJSON(200, gin.H{"Result": result})
 }
 
 // @Summary 创建新用户
@@ -64,7 +64,7 @@ func (s *UserListSource) Post(c *gin.Context) {
 	uinput := &UserCreateQuery{}
 	err := c.ShouldBindBodyWith(uinput, binding.JSON)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, &ResultResponse{Message: err.Error()})
+		c.PureJSON(http.StatusBadRequest, &ResultResponse{Message: err.Error()})
 		return
 	}
 
@@ -74,8 +74,8 @@ func (s *UserListSource) Post(c *gin.Context) {
 	}
 	err = u.Save(models.DB)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
+		c.PureJSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
 		return
 	}
-	c.JSON(200, u)
+	c.PureJSON(200, u)
 }

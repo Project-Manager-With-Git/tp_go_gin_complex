@@ -13,7 +13,7 @@ import (
 // OTPCode字段为空表示未激活二次验证功能
 // 默认构造用户admin,它会加入admin群组
 type User struct {
-	ID   int32  `xorm:"pk autoincr 'id' comment('用户id')" json:"ID,omitempty" uri:"id" binding:"required,uid"`
+	ID   int32  `xorm:"pk autoincr 'id' comment('用户id')" json:"ID,omitempty" uri:"uid" binding:"required"`
 	Name string `xorm:"varchar(25) notnull unique 'name' comment('用户名')" json:"Name,omitempty"`
 }
 
