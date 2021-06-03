@@ -5,6 +5,7 @@ import (
 
 	"tp_go_gin_complex/serv"
 
+	log "github.com/Golang-Tools/loggerhelper"
 	s "github.com/Golang-Tools/schema-entry-go"
 )
 
@@ -21,11 +22,10 @@ import (
 // @host localhost
 // @BasePath /
 func main() {
-	root, _ := s.New(&s.EntryPointMeta{Name: "tp_go_gin_complex", Usage: "tp_go_gin_complex [cmd [options]]"})
-	serv, _ := s.New(&s.EntryPointMeta{Name: "serv", Usage: "tp_go_gin_complex serv"}, &serv.ServNode)
-	// nodec, _ := s.New(&s.EntryPointMeta{Name: "ping", Usage: "tp_go_gin_complex "}, &C{
-	// 	Field: []int{1, 2, 3},
-	// })
-	s.RegistSubNode(root, serv)
-	root.Parse(os.Args)
+	serv, err := s.New(&s.EntryPointMeta{Name: "tp_go_gin_complex", Usage: "tp_go_gin_complex [options]"}, &serv.ServNode)
+	if err != nil {
+		log.Error("create entrypoint get error", log.Dict{"err": err})
+		os.Exit(2)
+	}
+	serv.Parse(os.Args)
 }

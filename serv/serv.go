@@ -164,18 +164,17 @@ func (s *Serv) Main() {
 	if s.Static_Source_Dir != "" {
 		s.app.Use(static.Serve("/static", static.LocalFile(s.Static_Source_Dir, false)))
 	}
-
-	url := ginSwagger.URL("http://localhost:5000/swagger/doc.json") // The url pointing to API definition
-	s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
-
+	if s.Log_Level == "DEBUG" {
+		url := ginSwagger.URL("http://localhost:5000/swagger/doc.json") // The url pointing to API definition
+		s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+	}
 	apis.Init(s.app)
-
 	// 启动服务
 	s.runserv()
 }
 
 var ServNode = Serv{
-	App_Version:         "0.0.1",
+	App_Version:         "1.0.0",
 	App_Name:            "tp_go_gin_complex",
 	Log_Level:           "DEBUG",
 	Address:             "0.0.0.0:5000",

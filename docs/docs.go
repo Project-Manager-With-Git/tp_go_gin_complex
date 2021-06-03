@@ -33,6 +33,9 @@ var doc = `{
     "paths": {
         "/v1/api/user": {
             "get": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -42,7 +45,13 @@ var doc = `{
                 "summary": "获取用户列表信息",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "用户列表响应信息,会展示用户数量",
+                        "schema": {
+                            "$ref": "#/definitions/usernamespace.UserListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器处理失败",
                         "schema": {
                             "type": "string"
                         }
@@ -62,7 +71,7 @@ var doc = `{
                 "summary": "创建新用户",
                 "parameters": [
                     {
-                        "description": "用户名",
+                        "description": "用户名信息",
                         "name": "name",
                         "in": "body",
                         "required": true,
@@ -73,9 +82,152 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "{\"Name\":\"1234\",\"ID\":1}",
+                        "description": "用户信息",
                         "schema": {
                             "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "请求数据不符合要求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器处理失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/api/user/{uid}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取用户列表信息",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "uid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "请求数据不符合要求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "未找到指定资源",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "更新指定用户信息",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "uid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "请求数据不符合要求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "未找到指定资源",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器处理失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "删除指定用户",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "uid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "请求数据不符合要求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "未找到指定资源",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器处理失败",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -85,6 +237,9 @@ var doc = `{
     "definitions": {
         "user.User": {
             "type": "object",
+            "required": [
+                "ID"
+            ],
             "properties": {
                 "ID": {
                     "type": "integer"
@@ -94,11 +249,42 @@ var doc = `{
                 }
             }
         },
+        "usernamespace.LinkResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "uri": {
+                    "type": "string"
+                }
+            }
+        },
         "usernamespace.UserCreateQuery": {
             "type": "object",
             "properties": {
                 "Name": {
                     "type": "string"
+                }
+            }
+        },
+        "usernamespace.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "Description": {
+                    "type": "string"
+                },
+                "Links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/usernamespace.LinkResponse"
+                    }
+                },
+                "UserCount": {
+                    "type": "integer"
                 }
             }
         }

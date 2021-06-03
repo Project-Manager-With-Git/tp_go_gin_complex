@@ -14,8 +14,10 @@ type UserListSource struct {
 
 // @Summary 获取用户列表信息
 // @Tags user
-// @Produce  json
-// @Success 200 {object} json
+// @Accept application/json
+// @Produce  application/json
+// @Success 200 {object} UserListResponse "用户列表响应信息,会展示用户数量"
+// @Failure 500 {string} ResultResponse "服务器处理失败"
 // @Router /v1/api/user [get]
 func (s *UserListSource) Get(c *gin.Context) {
 	cnt, err := user.Count(models.DB)
@@ -23,29 +25,29 @@ func (s *UserListSource) Get(c *gin.Context) {
 		c.PureJSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
 		return
 	}
-	result := map[string]interface{}{
-		"Description": "测试api,User总览",
-		"UserCount":   cnt,
-		"Links": []map[string]interface{}{
+	result := UserListResponse{
+		Description: "测试api,User总览",
+		UserCount:   cnt,
+		Links: []LinkResponse{
 			{
-				"uri":         "/user",
-				"method":      "POST",
-				"description": "创建一个新用户",
+				URI:         "/user",
+				Method:      "POST",
+				Description: "创建一个新用户",
 			},
 			{
-				"uri":         "/user/<int:uid>",
-				"method":      "GET",
-				"description": "用户号为<id>的用户信息",
+				URI:         "/user/<int:uid>",
+				Method:      "GET",
+				Description: "用户号为<id>的用户信息",
 			},
 			{
-				"uri":         "/user/<int:uid>",
-				"method":      "PUT",
-				"description": "更新用户号为<id>用户信息",
+				URI:         "/user/<int:uid>",
+				Method:      "PUT",
+				Description: "更新用户号为<id>用户信息",
 			},
 			{
-				"uri":         "/user/<int:uid>",
-				"method":      "DELETE",
-				"description": "删除用户号为<id>用户",
+				URI:         "/user/<int:uid>",
+				Method:      "DELETE",
+				Description: "删除用户号为<id>用户",
 			},
 		},
 	}
@@ -54,10 +56,12 @@ func (s *UserListSource) Get(c *gin.Context) {
 
 // @Summary 创建新用户
 // @Tags user
-// @accept json
-// @Produce json
-// @Param name body UserCreateQuery true "用户名"
-// @Success 200 {object} user.User "{"Name":"1234","ID":1}"
+// @Accept application/json
+// @Produce application/json
+// @Param name body UserCreateQuery true "用户名信息"
+// @Success 200 {object} user.User "用户信息"
+// @Failure 400 {string} ResultResponse "请求数据不符合要求"
+// @Failure 500 {string} ResultResponse "服务器处理失败"
 // @Router /v1/api/user [post]
 func (s *UserListSource) Post(c *gin.Context) {
 	// 请求参数校验
@@ -67,7 +71,6 @@ func (s *UserListSource) Post(c *gin.Context) {
 		c.PureJSON(http.StatusBadRequest, &ResultResponse{Message: err.Error()})
 		return
 	}
-
 	//创建用户
 	u := &user.User{
 		Name: uinput.Name,
