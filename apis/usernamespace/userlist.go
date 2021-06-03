@@ -13,12 +13,12 @@ type UserListSource struct {
 }
 
 // @Summary 获取用户列表信息
-// @Tags user
+// @Tags api user
 // @Accept application/json
 // @Produce  application/json
 // @Success 200 {object} UserListResponse "用户列表响应信息,会展示用户数量"
 // @Failure 500 {string} ResultResponse "服务器处理失败"
-// @Router /user [get]
+// @Router /api/user [get]
 func (s *UserListSource) Get(c *gin.Context) {
 	cnt, err := user.Count(models.DB)
 	if err != nil {
@@ -55,14 +55,14 @@ func (s *UserListSource) Get(c *gin.Context) {
 }
 
 // @Summary 创建新用户
-// @Tags user
+// @Tags api user
 // @Accept application/json
 // @Produce application/json
 // @Param name body UserCreateQuery true "用户名信息"
 // @Success 200 {object} user.User "用户信息"
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 500 {string} ResultResponse "服务器处理失败"
-// @Router /user [post]
+// @Router /api/user [post]
 func (s *UserListSource) Post(c *gin.Context) {
 	// 请求参数校验
 	uinput := &UserCreateQuery{}

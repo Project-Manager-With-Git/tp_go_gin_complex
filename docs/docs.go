@@ -31,7 +31,7 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/user": {
+        "/api/user": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -40,7 +40,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "api user"
                 ],
                 "summary": "获取用户列表信息",
                 "responses": {
@@ -66,7 +66,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "api user"
                 ],
                 "summary": "创建新用户",
                 "parameters": [
@@ -102,13 +102,13 @@ var doc = `{
                 }
             }
         },
-        "/user/{uid}": {
+        "/api/user/{uid}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "api user"
                 ],
                 "summary": "获取用户列表信息",
                 "parameters": [
@@ -147,7 +147,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "api user"
                 ],
                 "summary": "更新指定用户信息",
                 "parameters": [
@@ -192,7 +192,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "api user"
                 ],
                 "summary": "删除指定用户",
                 "parameters": [
@@ -232,9 +232,136 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/event/timer": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "event timer"
+                ],
+                "summary": "创建新用户",
+                "responses": {
+                    "200": {
+                        "description": "sse信息",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "event timer"
+                ],
+                "summary": "创建新用户",
+                "parameters": [
+                    {
+                        "description": "倒计时信息",
+                        "name": "counterdown",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/timernamespace.CounterDownQuery"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "倒计时频道信息信息",
+                        "schema": {
+                            "$ref": "#/definitions/timernamespace.CounterDownResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求数据不符合要求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器处理失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/event/timer/{channelid}": {
+            "get": {
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "event timer"
+                ],
+                "summary": "获取用户列表信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "频道id",
+                        "name": "channelid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "用户信息\"  Format(chunked)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "请求数据不符合要求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "未找到指定资源",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "timernamespace.CounterDownQuery": {
+            "type": "object",
+            "properties": {
+                "second": {
+                    "type": "integer"
+                }
+            }
+        },
+        "timernamespace.CounterDownResponse": {
+            "type": "object",
+            "properties": {
+                "channelid": {
+                    "type": "string"
+                }
+            }
+        },
         "user.User": {
             "type": "object",
             "required": [
@@ -304,7 +431,7 @@ type swaggerInfo struct {
 var SwaggerInfo = swaggerInfo{
 	Version:     "1.0.0",
 	Host:        "localhost:5000",
-	BasePath:    "/v1_0_0/api",
+	BasePath:    "/v1_0_0",
 	Schemes:     []string{},
 	Title:       "tp_go_gin_complex",
 	Description: "测试",

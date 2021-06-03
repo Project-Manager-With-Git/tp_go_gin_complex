@@ -1,5 +1,15 @@
-basePath: /v1_0_0/api
+basePath: /v1_0_0
 definitions:
+  timernamespace.CounterDownQuery:
+    properties:
+      second:
+        type: integer
+    type: object
+  timernamespace.CounterDownResponse:
+    properties:
+      channelid:
+        type: string
+    type: object
   user.User:
     properties:
       ID:
@@ -46,7 +56,7 @@ info:
   title: tp_go_gin_complex
   version: 1.0.0
 paths:
-  /user:
+  /api/user:
     get:
       consumes:
       - application/json
@@ -63,7 +73,7 @@ paths:
             type: string
       summary: 获取用户列表信息
       tags:
-      - user
+      - api user
     post:
       consumes:
       - application/json
@@ -91,8 +101,8 @@ paths:
             type: string
       summary: 创建新用户
       tags:
-      - user
-  /user/{uid}:
+      - api user
+  /api/user/{uid}:
     delete:
       parameters:
       - description: User ID
@@ -122,7 +132,7 @@ paths:
             type: string
       summary: 删除指定用户
       tags:
-      - user
+      - api user
     get:
       parameters:
       - description: User ID
@@ -148,7 +158,7 @@ paths:
             type: string
       summary: 获取用户列表信息
       tags:
-      - user
+      - api user
     put:
       parameters:
       - description: User ID
@@ -178,5 +188,77 @@ paths:
             type: string
       summary: 更新指定用户信息
       tags:
-      - user
+      - api user
+  /event/timer:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: sse信息
+          schema:
+            items:
+              type: string
+            type: array
+      summary: 创建新用户
+      tags:
+      - event timer
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 倒计时信息
+        in: body
+        name: counterdown
+        required: true
+        schema:
+          $ref: '#/definitions/timernamespace.CounterDownQuery'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 倒计时频道信息信息
+          schema:
+            $ref: '#/definitions/timernamespace.CounterDownResponse'
+        "400":
+          description: 请求数据不符合要求
+          schema:
+            type: string
+        "500":
+          description: 服务器处理失败
+          schema:
+            type: string
+      summary: 创建新用户
+      tags:
+      - event timer
+  /event/timer/{channelid}:
+    get:
+      parameters:
+      - description: 频道id
+        in: path
+        name: channelid
+        required: true
+        type: string
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: 用户信息"  Format(chunked)
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: 请求数据不符合要求
+          schema:
+            type: string
+        "404":
+          description: 未找到指定资源
+          schema:
+            type: string
+      summary: 获取用户列表信息
+      tags:
+      - event timer
 swagger: "2.0"

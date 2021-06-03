@@ -14,12 +14,13 @@ type TimerSource struct {
 }
 
 // @Summary 获取用户列表信息
-// @Tags user
+// @Tags event timer
 // @Produce  text/event-stream
 // @Param   channelid  path   string   true  "频道id"
+// @Success 200 {array} string "用户信息"  Format(chunked)
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
-// @Router /timer/{channelid} [get]
+// @Router /event/timer/{channelid} [get]
 func (s *TimerSource) Get(c *gin.Context) {
 	cq := &ListenQuery{}
 	err := c.BindUri(cq)
@@ -28,17 +29,35 @@ func (s *TimerSource) Get(c *gin.Context) {
 		return
 	}
 	ssech := make(chan *sse.Event, 10)
+	closech := make(chan struct{})
 	e := events.EventName(cq.ChannelID)
+	// find := false
+	EventNames := PubSub.EventNames()
+	log.Info("get EventNames", log.Dict{"EventNames": EventNames})
+	// if len(EventNames) == 0 {
+	// 	find = true
+	// } else {
+	// 	for _, name := range EventNames {
+	// 		if e == name {
+	// 			find = true
+	// 			break
+	// 		}
+	// 	}
+	// }
+	// if !find {
+	// 	c.JSON(http.StatusNotFound, &ResultResponse{Message: "channelid not found"})
+	// 	return
+	// }
 	l := events.Listener(func(payload ...interface{}) {
 		for _, pl := range payload {
-			switch pl.(type) {
+			switch pl := pl.(type) {
 			case *sse.Event:
 				{
-					ssech <- pl.(*sse.Event)
+					ssech <- pl
 				}
 			default:
 				{
-					close(ssech)
+					close(closech)
 				}
 			}
 
@@ -50,13 +69,24 @@ func (s *TimerSource) Get(c *gin.Context) {
 	clientGone := c.Writer.CloseNotify()
 	c.Stream(func(w io.Writer) bool {
 		select {
+		case <-closech:
+			{
+				ok := PubSub.RemoveListener(e, l)
+				if ok {
+					close(ssech)
+				}
+				log.Debug("service close", log.Dict{
+					"channelid": cq.ChannelID,
+				})
+				return false
+			}
 		case <-clientGone:
 			{
 				ok := PubSub.RemoveListener(e, l)
 				if ok {
 					close(ssech)
 				}
-				log.Debug("watching close", log.Dict{
+				log.Debug("client close", log.Dict{
 					"channelid": cq.ChannelID,
 				})
 				return false
@@ -64,14 +94,19 @@ func (s *TimerSource) Get(c *gin.Context) {
 		case message, isopen := <-ssech:
 			{
 				if isopen {
+					log.Debug("channel open", log.Dict{
+						"channelid": cq.ChannelID,
+					})
 					c.Render(-1, *message)
 					return true
 				} else {
+					log.Debug("channel close", log.Dict{
+						"channelid": cq.ChannelID,
+					})
 					return false
 				}
 
 			}
 		}
 	})
-	return
 }

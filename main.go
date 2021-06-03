@@ -20,7 +20,7 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host localhost:5000
-// @BasePath /v1_0_0/api
+// @BasePath /v1_0_0
 func main() {
 	serv, err := s.New(&s.EntryPointMeta{Name: "tp_go_gin_complex", Usage: "tp_go_gin_complex [options]"}, &serv.ServNode)
 	if err != nil {

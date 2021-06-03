@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"tp_go_gin_complex/apis"
+	"tp_go_gin_complex/events"
 	"tp_go_gin_complex/models"
 
 	_ "tp_go_gin_complex/docs"
@@ -99,7 +100,7 @@ func (s *Serv) runserv() {
 		}
 	}()
 	// 等待中断信号以优雅地关闭服务器（设置 5 秒的超时时间）
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 5)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	log.Info("Shutdown Server ...")
@@ -169,6 +170,7 @@ func (s *Serv) Main() {
 		s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 	}
 	apis.Init(s.app)
+	events.Init(s.app)
 	// 启动服务
 	s.runserv()
 }

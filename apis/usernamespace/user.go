@@ -13,13 +13,13 @@ type UserSource struct {
 }
 
 // @Summary 获取用户列表信息
-// @Tags user
+// @Tags api user
 // @Produce  application/json
 // @Param   uid  path    integer   true  "User ID" minimum(1)
 // @Success 200 {object} user.User
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
-// @Router /user/{uid} [get]
+// @Router /api/user/{uid} [get]
 func (s *UserSource) Get(c *gin.Context) {
 	u := &user.User{}
 	err := c.BindUri(u)
@@ -36,14 +36,14 @@ func (s *UserSource) Get(c *gin.Context) {
 }
 
 // @Summary 更新指定用户信息
-// @Tags user
+// @Tags api user
 // @Produce  application/json
 // @Param   uid  path    integer   true  "User ID" minimum(1)
 // @Success 200 {object} user.User
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
 // @Failure 500 {string} ResultResponse "服务器处理失败"
-// @Router /user/{uid} [put]
+// @Router /api/user/{uid} [put]
 func (s *UserSource) Put(c *gin.Context) {
 	u := &user.User{}
 	err := c.BindUri(u)
@@ -73,14 +73,14 @@ func (s *UserSource) Put(c *gin.Context) {
 }
 
 // @Summary 删除指定用户
-// @Tags user
+// @Tags api user
 // @Produce  application/json
 // @Param   uid  path    integer   true  "User ID" minimum(1)
 // @Success 200 {object} user.User
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
 // @Failure 500 {string} ResultResponse "服务器处理失败"
-// @Router /user/{uid} [delete]
+// @Router /api/user/{uid} [delete]
 func (s *UserSource) Delete(c *gin.Context) {
 	u := &user.User{}
 	err := c.BindUri(u)
