@@ -31,7 +31,7 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/api/user": {
+        "/user": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -102,7 +102,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/api/user/{uid}": {
+        "/user/{uid}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -302,9 +302,9 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.0",
-	Host:        "localhost",
-	BasePath:    "/",
+	Version:     "1.0.0",
+	Host:        "localhost:5000",
+	BasePath:    "/v1_0_0/api",
 	Schemes:     []string{},
 	Title:       "tp_go_gin_complex",
 	Description: "测试",

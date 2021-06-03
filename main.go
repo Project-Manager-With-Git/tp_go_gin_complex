@@ -10,7 +10,7 @@ import (
 )
 
 // @title tp_go_gin_complex
-// @version 1.0
+// @version 1.0.0
 // @description 测试
 
 // @contact.name hsz
@@ -19,8 +19,8 @@ import (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost
-// @BasePath /
+// @host localhost:5000
+// @BasePath /v1_0_0/api
 func main() {
 	serv, err := s.New(&s.EntryPointMeta{Name: "tp_go_gin_complex", Usage: "tp_go_gin_complex [options]"}, &serv.ServNode)
 	if err != nil {

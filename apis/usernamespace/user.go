@@ -19,7 +19,7 @@ type UserSource struct {
 // @Success 200 {object} user.User
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
-// @Router /v1/api/user/{uid} [get]
+// @Router /user/{uid} [get]
 func (s *UserSource) Get(c *gin.Context) {
 	u := &user.User{}
 	err := c.BindUri(u)
@@ -43,7 +43,7 @@ func (s *UserSource) Get(c *gin.Context) {
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
 // @Failure 500 {string} ResultResponse "服务器处理失败"
-// @Router /v1/api/user/{uid} [put]
+// @Router /user/{uid} [put]
 func (s *UserSource) Put(c *gin.Context) {
 	u := &user.User{}
 	err := c.BindUri(u)
@@ -80,7 +80,7 @@ func (s *UserSource) Put(c *gin.Context) {
 // @Failure 400 {string} ResultResponse "请求数据不符合要求"
 // @Failure 404 {string} ResultResponse "未找到指定资源"
 // @Failure 500 {string} ResultResponse "服务器处理失败"
-// @Router /v1/api/user/{uid} [delete]
+// @Router /user/{uid} [delete]
 func (s *UserSource) Delete(c *gin.Context) {
 	u := &user.User{}
 	err := c.BindUri(u)

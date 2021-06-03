@@ -1,4 +1,4 @@
-basePath: /
+basePath: /v1_0_0/api
 definitions:
   user.User:
     properties:
@@ -34,7 +34,7 @@ definitions:
       UserCount:
         type: integer
     type: object
-host: localhost
+host: localhost:5000
 info:
   contact:
     email: hsz1273327@gmail.com
@@ -44,9 +44,9 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: tp_go_gin_complex
-  version: "1.0"
+  version: 1.0.0
 paths:
-  /v1/api/user:
+  /user:
     get:
       consumes:
       - application/json
@@ -92,7 +92,7 @@ paths:
       summary: 创建新用户
       tags:
       - user
-  /v1/api/user/{uid}:
+  /user/{uid}:
     delete:
       parameters:
       - description: User ID
