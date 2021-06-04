@@ -202,7 +202,7 @@ paths:
             items:
               type: string
             type: array
-      summary: 创建新用户
+      summary: 监听全部计时器
       tags:
       - event timer
     post:
@@ -230,7 +230,7 @@ paths:
           description: 服务器处理失败
           schema:
             type: string
-      summary: 创建新用户
+      summary: 创建计时器
       tags:
       - event timer
   /event/timer/{channelid}:
@@ -258,7 +258,7 @@ paths:
           description: 未找到指定资源
           schema:
             type: string
-      summary: 获取用户列表信息
+      summary: 监听指定计时器
       tags:
       - event timer
 swagger: "2.0"

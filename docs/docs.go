@@ -244,7 +244,7 @@ var doc = `{
                 "tags": [
                     "event timer"
                 ],
-                "summary": "创建新用户",
+                "summary": "监听全部计时器",
                 "responses": {
                     "200": {
                         "description": "sse信息",
@@ -267,7 +267,7 @@ var doc = `{
                 "tags": [
                     "event timer"
                 ],
-                "summary": "创建新用户",
+                "summary": "创建计时器",
                 "parameters": [
                     {
                         "description": "倒计时信息",
@@ -309,7 +309,7 @@ var doc = `{
                 "tags": [
                     "event timer"
                 ],
-                "summary": "获取用户列表信息",
+                "summary": "监听指定计时器",
                 "parameters": [
                     {
                         "type": "string",

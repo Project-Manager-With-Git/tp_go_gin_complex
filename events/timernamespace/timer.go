@@ -7,13 +7,12 @@ import (
 	log "github.com/Golang-Tools/loggerhelper"
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin"
-	events "github.com/kataras/go-events"
 )
 
 type TimerSource struct {
 }
 
-// @Summary 获取用户列表信息
+// @Summary 监听指定计时器
 // @Tags event timer
 // @Produce  text/event-stream
 // @Param   channelid  path   string   true  "频道id"
@@ -28,64 +27,41 @@ func (s *TimerSource) Get(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, &ResultResponse{Message: err.Error()})
 		return
 	}
-	ssech := make(chan *sse.Event, 10)
-	closech := make(chan struct{})
-	e := events.EventName(cq.ChannelID)
-	// find := false
-	EventNames := PubSub.EventNames()
-	log.Info("get EventNames", log.Dict{"EventNames": EventNames})
-	// if len(EventNames) == 0 {
-	// 	find = true
-	// } else {
-	// 	for _, name := range EventNames {
-	// 		if e == name {
-	// 			find = true
-	// 			break
-	// 		}
-	// 	}
-	// }
-	// if !find {
-	// 	c.JSON(http.StatusNotFound, &ResultResponse{Message: "channelid not found"})
-	// 	return
-	// }
-	l := events.Listener(func(payload ...interface{}) {
-		for _, pl := range payload {
-			switch pl := pl.(type) {
-			case *sse.Event:
-				{
-					ssech <- pl
-				}
-			default:
-				{
-					close(closech)
-				}
-			}
 
-		}
-	})
-	PubSub.AddListener(e, l)
+	servclose, ok := PubSub.CloseNotify(cq.ChannelID)
+	if !ok {
+		c.JSON(http.StatusNotFound, &ResultResponse{Message: "channelid not found"})
+		return
+	}
+	ssech, closech, closefunc, err := PubSub.RegistListener(cq.ChannelID, 10)
+	if err != nil {
+		c.JSON(http.StatusNotFound, &ResultResponse{Message: err.Error()})
+		return
+	}
+
 	c.Header("Connection", "keep-alive")
 	c.Writer.Flush()
 	clientGone := c.Writer.CloseNotify()
 	c.Stream(func(w io.Writer) bool {
 		select {
+		case <-servclose:
+			{
+				closefunc()
+				log.Debug("service close", log.Dict{
+					"channelid": cq.ChannelID,
+				})
+				return false
+			}
 		case <-closech:
 			{
-				ok := PubSub.RemoveListener(e, l)
-				if ok {
-					close(ssech)
-				}
-				log.Debug("service close", log.Dict{
+				log.Debug("losed by func", log.Dict{
 					"channelid": cq.ChannelID,
 				})
 				return false
 			}
 		case <-clientGone:
 			{
-				ok := PubSub.RemoveListener(e, l)
-				if ok {
-					close(ssech)
-				}
+				closefunc()
 				log.Debug("client close", log.Dict{
 					"channelid": cq.ChannelID,
 				})
@@ -97,7 +73,7 @@ func (s *TimerSource) Get(c *gin.Context) {
 					log.Debug("channel open", log.Dict{
 						"channelid": cq.ChannelID,
 					})
-					c.Render(-1, *message)
+					c.Render(-1, *message.(*sse.Event))
 					return true
 				} else {
 					log.Debug("channel close", log.Dict{
@@ -105,7 +81,6 @@ func (s *TimerSource) Get(c *gin.Context) {
 					})
 					return false
 				}
-
 			}
 		}
 	})

@@ -10,38 +10,24 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	events "github.com/kataras/go-events"
 	uuid "github.com/satori/go.uuid"
 )
 
 type TimerListSource struct {
 }
 
-// @Summary 创建新用户
+// @Summary 监听全部计时器
 // @Tags event timer
 // @Accept application/json
 // @Produce text/event-stream
 // @Success 200 {array} string "sse信息"
 // @Router /event/timer [get]
 func (s *TimerListSource) Get(c *gin.Context) {
-	ssech := make(chan *sse.Event, 10)
-	closech := make(chan struct{})
-	e := events.EventName("default")
-	l := events.Listener(func(payload ...interface{}) {
-		for _, pl := range payload {
-			switch pl := pl.(type) {
-			case *sse.Event:
-				{
-					ssech <- pl
-				}
-			default:
-				{
-					close(closech)
-				}
-			}
-		}
-	})
-	PubSub.AddListener(e, l)
+	ssech, closech, closefunc, err := PubSub.RegistListener("default", 10)
+	if err != nil {
+		c.JSON(http.StatusNotFound, &ResultResponse{Message: "channelid not found"})
+		return
+	}
 	c.Header("Connection", "keep-alive")
 	c.Writer.Flush()
 	clientGone := c.Writer.CloseNotify()
@@ -49,21 +35,14 @@ func (s *TimerListSource) Get(c *gin.Context) {
 		select {
 		case <-closech:
 			{
-				ok := PubSub.RemoveListener(e, l)
-				if ok {
-					close(ssech)
-				}
-				log.Debug("service close", log.Dict{
+				log.Debug("closed by func", log.Dict{
 					"channelid": "default",
 				})
 				return false
 			}
 		case <-clientGone:
 			{
-				ok := PubSub.RemoveListener(e, l)
-				if ok {
-					close(ssech)
-				}
+				closefunc()
 				log.Debug("client close", log.Dict{
 					"channelid": "default",
 				})
@@ -75,7 +54,7 @@ func (s *TimerListSource) Get(c *gin.Context) {
 					log.Debug("channel open", log.Dict{
 						"channelid": "default",
 					})
-					c.Render(-1, *message)
+					c.Render(-1, *message.(*sse.Event))
 					return true
 				} else {
 					log.Debug("channel close", log.Dict{
@@ -88,7 +67,7 @@ func (s *TimerListSource) Get(c *gin.Context) {
 	})
 }
 
-// @Summary 创建新用户
+// @Summary 创建计时器
 // @Tags event timer
 // @Accept application/json
 // @Produce application/json
@@ -105,8 +84,6 @@ func (s *TimerListSource) Post(c *gin.Context) {
 		return
 	}
 	es := uuid.NewV4().String()
-	e := events.EventName(es)
-	ge := events.EventName("default")
 	go func(count int) {
 		for i := 0; i < count; i++ {
 			evt := sse.Event{
@@ -114,13 +91,11 @@ func (s *TimerListSource) Post(c *gin.Context) {
 				Event: "countdown",
 				Data:  strconv.Itoa(count - i),
 			}
-			PubSub.Emit(e, &evt)
-			PubSub.Emit(ge, &evt)
+			PubSub.PublishWithDefault(&evt, es)
 			time.Sleep(time.Second)
 		}
-		PubSub.Emit(e, &struct{}{})
 		time.Sleep(time.Second)
-		PubSub.RemoveAllListeners(e)
+		PubSub.CloseChannel(es)
 	}(cd.Seconds)
 	c.PureJSON(200, &CounterDownResponse{ChannelID: es})
 }

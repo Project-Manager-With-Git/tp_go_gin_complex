@@ -1,7 +1,7 @@
 package timernamespace
 
 import (
-	events "github.com/kataras/go-events"
+	"github.com/Golang-Tools/pubsubmanager"
 )
 
 type ListenQuery struct {
@@ -18,10 +18,5 @@ type CounterDownQuery struct {
 type CounterDownResponse struct {
 	ChannelID string `json:"channelid"`
 }
-type SSEvent struct {
-	Event string
-	Id    string
-	Retry uint
-}
 
-var PubSub = events.New()
+var PubSub = pubsubmanager.NewPubSubManager()

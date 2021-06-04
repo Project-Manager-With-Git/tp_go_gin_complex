@@ -9,6 +9,8 @@ github.com/CloudyKit/jet v2.1.2+incompatible h1:ybZoYzMBdoijK6I+Ke3vg9GZsmlKo/Zh
 github.com/CloudyKit/jet v2.1.2+incompatible/go.mod h1:HPYO+50pSWkPoj9Q/eq0aRGByCL6ScRlUmiEX5Zgm+w=
 github.com/Golang-Tools/loggerhelper v0.0.3 h1:X4qNDUZzisKDiuynHQO8WkL4N+zqaHGd04pqp/kuj+M=
 github.com/Golang-Tools/loggerhelper v0.0.3/go.mod h1:lhXvi3RXNRkRyX7/hnzqNyAEUimkEyWBMcFd5iSNbzI=
+github.com/Golang-Tools/pubsubmanager v0.0.0-20210604074941-b465bb336266 h1:QJzyifATVdw2+YkF7a9+IKovxAxWnvNxQmqiIK/LuUE=
+github.com/Golang-Tools/pubsubmanager v0.0.0-20210604074941-b465bb336266/go.mod h1:X4sKohhdQvNBVkyayYhyCn9LQKp772QSxyDRuFM/RUI=
 github.com/Golang-Tools/schema-entry-go v0.0.4 h1:+byKEtz3s6y/4dxiAg3GLuZJ8zunq0O7oVDjwGtkh84=
 github.com/Golang-Tools/schema-entry-go v0.0.4/go.mod h1:f7HIBa9tjn6KcwFDUhArsL95gX+EogE31aAhPzWKAK4=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=

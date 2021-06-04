@@ -7,6 +7,7 @@ require (
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/CloudyKit/jet v2.1.2+incompatible // indirect
 	github.com/Golang-Tools/loggerhelper v0.0.3
+	github.com/Golang-Tools/pubsubmanager v0.0.0-20210604074941-b465bb336266
 	github.com/Golang-Tools/schema-entry-go v0.0.4
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
 	github.com/agrison/mxj v0.0.0-20160310142625-1269f8afb3b4 // indirect
