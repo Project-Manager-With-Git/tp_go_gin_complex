@@ -1,8 +1,10 @@
 package timernamespace
 
 import (
-	"github.com/Golang-Tools/pubsubmanager"
+	jsoniter "github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type ListenQuery struct {
 	ChannelID string `uri:"channelid" binding:"required"`
@@ -19,4 +21,9 @@ type CounterDownResponse struct {
 	ChannelID string `json:"channelid"`
 }
 
-var PubSub = pubsubmanager.NewPubSubManager()
+type Event struct {
+	Id    string `json:"id,omitempty"`
+	Event string `json:"event,omitempty"`
+	Data  string `json:"data,omitempty"`
+	Retry uint   `json:"retry,omitempty"`
+}

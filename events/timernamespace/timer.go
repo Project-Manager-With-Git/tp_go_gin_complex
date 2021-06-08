@@ -1,10 +1,12 @@
 package timernamespace
 
 import (
+	"context"
 	"io"
 	"net/http"
 
 	log "github.com/Golang-Tools/loggerhelper"
+	"github.com/Golang-Tools/redishelper/proxy"
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin"
 )
@@ -27,43 +29,32 @@ func (s *TimerSource) Get(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, &ResultResponse{Message: err.Error()})
 		return
 	}
-
-	servclose, ok := PubSub.CloseNotify(cq.ChannelID)
-	if !ok {
-		c.JSON(http.StatusNotFound, &ResultResponse{Message: "channelid not found"})
-		return
-	}
-	ssech, closech, closefunc, err := PubSub.RegistListener(cq.ChannelID, 10)
+	ctx := context.Background()
+	ok, err := proxy.Proxy.SIsMember(ctx, "timer::channels", cq.ChannelID).Result()
 	if err != nil {
-		c.JSON(http.StatusNotFound, &ResultResponse{Message: err.Error()})
+		c.PureJSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
 		return
 	}
+	if !ok {
+		c.PureJSON(http.StatusNotFound, &ResultResponse{Message: "channel not in use"})
+		return
+	}
+	pubsub := proxy.Proxy.Subscribe(ctx, "timer::"+cq.ChannelID)
+	ssech := pubsub.Channel()
+	defer func() {
+		pubsub.Unsubscribe(ctx)
+		pubsub.Close()
+	}()
 
 	c.Header("Connection", "keep-alive")
 	c.Writer.Flush()
 	clientGone := c.Writer.CloseNotify()
 	c.Stream(func(w io.Writer) bool {
 		select {
-		case <-servclose:
-			{
-				closefunc()
-				log.Debug("service close", log.Dict{
-					"channelid": cq.ChannelID,
-				})
-				return false
-			}
-		case <-closech:
-			{
-				log.Debug("losed by func", log.Dict{
-					"channelid": cq.ChannelID,
-				})
-				return false
-			}
 		case <-clientGone:
 			{
-				closefunc()
 				log.Debug("client close", log.Dict{
-					"channelid": cq.ChannelID,
+					"channelid": "timer::" + cq.ChannelID,
 				})
 				return false
 			}
@@ -71,13 +62,30 @@ func (s *TimerSource) Get(c *gin.Context) {
 			{
 				if isopen {
 					log.Debug("channel open", log.Dict{
-						"channelid": cq.ChannelID,
+						"channelid": "timer::" + cq.ChannelID,
 					})
-					c.Render(-1, *message.(*sse.Event))
+					msg := Event{}
+					err := json.UnmarshalFromString(message.Payload, &msg)
+					if err != nil {
+						log.Error("UnmarshalFromString error", log.Dict{"Payload": message.Payload})
+						return true
+					}
+					if msg.Event == "EOF" {
+						log.Debug("publisher close", log.Dict{
+							"channelid": "timer::" + cq.ChannelID,
+						})
+						return false
+					}
+					c.Render(-1, &sse.Event{
+						Id:    msg.Id,
+						Event: msg.Event,
+						Data:  msg.Data,
+						Retry: msg.Retry,
+					})
 					return true
 				} else {
 					log.Debug("channel close", log.Dict{
-						"channelid": cq.ChannelID,
+						"channelid": "timer::" + cq.ChannelID,
 					})
 					return false
 				}

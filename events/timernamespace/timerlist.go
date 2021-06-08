@@ -1,12 +1,15 @@
 package timernamespace
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+	"tp_go_gin_complex/events/setting"
 
 	log "github.com/Golang-Tools/loggerhelper"
+	"github.com/Golang-Tools/redishelper/proxy"
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -23,48 +26,76 @@ type TimerListSource struct {
 // @Success 200 {array} string "sse信息"
 // @Router /event/timer [get]
 func (s *TimerListSource) Get(c *gin.Context) {
-	ssech, closech, closefunc, err := PubSub.RegistListener("default", 10)
-	if err != nil {
-		c.JSON(http.StatusNotFound, &ResultResponse{Message: "channelid not found"})
-		return
-	}
+	ctx := context.Background()
+	pubsub := proxy.Proxy.Subscribe(ctx, "timer::global")
+	ssech := pubsub.Channel()
+	defer func() {
+		pubsub.Unsubscribe(ctx)
+		pubsub.Close()
+	}()
 	c.Header("Connection", "keep-alive")
 	c.Writer.Flush()
 	clientGone := c.Writer.CloseNotify()
 	c.Stream(func(w io.Writer) bool {
 		select {
-		case <-closech:
-			{
-				log.Debug("closed by func", log.Dict{
-					"channelid": "default",
-				})
-				return false
-			}
 		case <-clientGone:
 			{
-				closefunc()
 				log.Debug("client close", log.Dict{
-					"channelid": "default",
+					"channelid": "timer::global",
 				})
+
 				return false
 			}
 		case message, isopen := <-ssech:
 			{
 				if isopen {
 					log.Debug("channel open", log.Dict{
-						"channelid": "default",
+						"channelid": "timer::global",
 					})
-					c.Render(-1, *message.(*sse.Event))
+					msg := Event{}
+					err := json.UnmarshalFromString(message.Payload, &msg)
+					if err != nil {
+						log.Error("UnmarshalFromString error", log.Dict{"Payload": message.Payload})
+						return true
+					}
+					if msg.Event == "EOF" {
+						log.Debug("publisher close", log.Dict{
+							"channelid": "timer::global",
+						})
+						return false
+					}
+					c.Render(-1, &sse.Event{
+						Id:    msg.Id,
+						Event: msg.Event,
+						Data:  msg.Data,
+						Retry: msg.Retry,
+					})
 					return true
 				} else {
 					log.Debug("channel close", log.Dict{
-						"channelid": "default",
+						"channelid": "timer::global",
 					})
 					return false
 				}
 			}
 		}
 	})
+}
+
+func sendMsg(evt *Event, es string, withgolbal bool) error {
+	msg, err := json.MarshalToString(*evt)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), setting.RedisQueryTimeout)
+	defer cancel()
+	pipe := proxy.Proxy.TxPipeline()
+	pipe.Publish(ctx, "timer::"+es, msg)
+	if withgolbal {
+		pipe.Publish(ctx, "timer::global", msg)
+	}
+	_, err = pipe.Exec(ctx)
+	return err
 }
 
 // @Summary 创建计时器
@@ -84,18 +115,44 @@ func (s *TimerListSource) Post(c *gin.Context) {
 		return
 	}
 	es := uuid.NewV4().String()
+	ctx, cancel := context.WithTimeout(context.Background(), setting.RedisQueryTimeout)
+	defer cancel()
+	_, err = proxy.Proxy.SAdd(ctx, "timer::channels", es).Result()
+	if err != nil {
+		c.PureJSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
+		return
+	}
+
 	go func(count int) {
 		for i := 0; i < count; i++ {
-			evt := sse.Event{
+			err := sendMsg(&Event{
 				Id:    es + "::" + strconv.Itoa(i),
 				Event: "countdown",
 				Data:  strconv.Itoa(count - i),
+			}, es, true)
+			if err != nil {
+				log.Error("sendMsg get error", log.Dict{"err": err.Error()})
+			} else {
+				log.Info("sendMsg ok")
 			}
-			PubSub.PublishWithDefault(&evt, es)
 			time.Sleep(time.Second)
 		}
 		time.Sleep(time.Second)
-		PubSub.CloseChannel(es)
+		err := sendMsg(&Event{
+			Event: "EOF",
+		}, es, false)
+		if err != nil {
+			log.Error("sendMsg get error", log.Dict{"err": err.Error()})
+		} else {
+			log.Info("send EOF Msg ok")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), setting.RedisQueryTimeout)
+		defer cancel()
+		_, err = proxy.Proxy.SRem(ctx, "timer::channels", es).Result()
+		if err != nil {
+			c.PureJSON(http.StatusInternalServerError, &ResultResponse{Message: err.Error()})
+			return
+		}
 	}(cd.Seconds)
 	c.PureJSON(200, &CounterDownResponse{ChannelID: es})
 }
