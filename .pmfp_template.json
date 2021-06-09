@@ -71,6 +71,10 @@
             "default": "{{ version }}"
         }
     },
+    "test": {
+        "source": "cp_go_gin//test",
+        "default_path": "servtest"
+    },
     "components": {
         "apis_init": {
             "source": "cp_go_gin//apis_init",
@@ -126,16 +130,6 @@
             "source": "serv",
             "description": "服务器存放位置",
             "default_path": "serv"
-        },
-        "apitest": {
-            "source": "cp_go_gin//apitest",
-            "description": "接口测试存放位置",
-            "default_path": "servtest/rest_test.go"
-        },
-        "ssetest": {
-            "source": "cp_go_gin//ssetest",
-            "description": "sse测试存放位置",
-            "default_path": "servtest/sse_test.go"
         }
     }
 }
