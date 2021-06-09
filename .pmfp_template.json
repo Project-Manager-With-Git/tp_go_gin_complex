@@ -1,7 +1,7 @@
 {
     "language": "go",
     "env": "gomod",
-    "description": "gin构造复杂服务的组件",
+    "description": "gin构造复杂服务的模板,支持RESTful的api,sse和流式下载大文件",
     "author": "hsz",
     "template_type": "socket",
     "requires": [
@@ -58,15 +58,15 @@
             "description": "事件命名空间名",
             "default": "timer"
         },
-        "author":{
+        "author": {
             "description": "作者",
             "default": "{{ author }}"
         },
-        "author_email":{
+        "author_email": {
             "description": "作者",
             "default": "{{ author_email }}"
         },
-        "version":{
+        "version": {
             "description": "项目版本",
             "default": "{{ version }}"
         }
