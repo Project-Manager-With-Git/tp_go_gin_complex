@@ -146,9 +146,9 @@ func (s *Serv) Main() {
 		corsconf.AllowOrigins = append(corsconf.AllowOrigins, fmt.Sprintf("%s://%s", schema, s.Published_Address))
 	}
 	if s.Cors_Allow_Origins != nil {
-		corsconf.AllowOrigins = append(corsconf.AllowOrigins, s.Cor s_Allow_Origins...)
+		corsconf.AllowOrigins = append(corsconf.AllowOrigins, s.Cors_Allow_Origins...)
 	}
-	corsconf.AllowCredentials = s.Cor s_Allow_Credentials
+	corsconf.AllowCredentials = s.Cors_Allow_Credentials
 	if s.Cors_Allow_Headers != nil {
 		for _, header := range s.Cors_Allow_Headers {
 			corsconf.AddAllowHeaders(header)
