@@ -34,10 +34,10 @@ type Serv struct {
 	Address           string `json:"address" jsonschema:"required,title=a,description=启动地址"`
 	Published_Address string `json:"published_address" jsonschema:"title=p,description=外部访问地址"`
 
-	Cros_Allow_Origins     []string `json:"cros_allow_origins" jsonschema:"description=跨域允许的域名"`
-	Cros_Allow_Credentials bool     `json:"cros_allow_credentials" jsonschema:"description=跨域是否需要证书"`
-	Cros_Allow_Headers     []string `json:"cros_allow_headers" jsonschema:"description=跨域允许的头"`
-	Cros_Expose_Headers    []string `json:"cros_expose_headers" jsonschema:"description=跨域暴露的头"`
+	Cors_Allow_Origins     []string `json:"cors_allow_origins" jsonschema:"description=跨域允许的域名"`
+	Cors_Allow_Credentials bool     `json:"cors_allow_credentials" jsonschema:"description=跨域是否需要证书"`
+	Cors_Allow_Headers     []string `json:"cors_allow_headers" jsonschema:"description=跨域允许的头"`
+	Cors_Expose_Headers    []string `json:"cors_expose_headers" jsonschema:"description=跨域暴露的头"`
 
 	Static_Page_Dir   string `json:"static_page_dir" jsonschema:"description=静态页面存放的文件夹"`
 	Static_Source_Dir string `json:"static_source_dir" jsonschema:"description=静态资源存放的文件夹"`
@@ -145,17 +145,17 @@ func (s *Serv) Main() {
 	if s.Published_Address != "" {
 		corsconf.AllowOrigins = append(corsconf.AllowOrigins, fmt.Sprintf("%s://%s", schema, s.Published_Address))
 	}
-	if s.Cros_Allow_Origins != nil {
-		corsconf.AllowOrigins = append(corsconf.AllowOrigins, s.Cros_Allow_Origins...)
+	if s.Cors_Allow_Origins != nil {
+		corsconf.AllowOrigins = append(corsconf.AllowOrigins, s.Cor s_Allow_Origins...)
 	}
-	corsconf.AllowCredentials = s.Cros_Allow_Credentials
-	if s.Cros_Allow_Headers != nil {
-		for _, header := range s.Cros_Allow_Headers {
+	corsconf.AllowCredentials = s.Cor s_Allow_Credentials
+	if s.Cors_Allow_Headers != nil {
+		for _, header := range s.Cors_Allow_Headers {
 			corsconf.AddAllowHeaders(header)
 		}
 	}
-	if s.Cros_Expose_Headers != nil {
-		for _, header := range s.Cros_Expose_Headers {
+	if s.Cors_Expose_Headers != nil {
+		for _, header := range s.Cors_Expose_Headers {
 			corsconf.AddExposeHeaders(header)
 		}
 	}
@@ -191,7 +191,7 @@ var ServNode = Serv{
 	DB_URL:              "sqlite://:memory:",
 	RedisURL:            "redis://localhost",
 	RedisQueryTimeoutMS: 50,
-	Cros_Allow_Origins:  []string{},
-	Cros_Allow_Headers:  []string{},
-	Cros_Expose_Headers: []string{},
+	Cors_Allow_Origins:  []string{},
+	Cors_Allow_Headers:  []string{},
+	Cors_Expose_Headers: []string{},
 }
