@@ -11,12 +11,12 @@ import (
 	"os/signal"
 	"time"
 
-	"tp_go_gin_complex/apis"
-	"tp_go_gin_complex/downloads"
-	"tp_go_gin_complex/events"
-	"tp_go_gin_complex/models"
+	"{{ app_name }}/apis"
+	"{{ app_name }}/downloads"
+	"{{ app_name }}/events"
+	"{{ app_name }}/models"
 
-	_ "tp_go_gin_complex/docs"
+	_ "{{ app_name }}/docs"
 
 	log "github.com/Golang-Tools/loggerhelper"
 	"github.com/gin-contrib/cors"
@@ -185,7 +185,7 @@ func (s *Serv) Main() {
 
 var ServNode = Serv{
 	App_Version:         "1.0.0",
-	App_Name:            "tp_go_gin_complex",
+	App_Name:            "{{ app_name }}",
 	Log_Level:           "DEBUG",
 	Address:             "0.0.0.0:5000",
 	DB_URL:              "sqlite://:memory:",
