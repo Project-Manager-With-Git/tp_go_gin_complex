@@ -77,52 +77,52 @@
     },
     "components": {
         "apis_init": {
-            "source": "cp_go_gin//apis_init",
+            "source": "cp_go_gin@v0.0.1//apis_init",
             "description": "RESTfulapi的存放位置",
             "default_path": "apis/apis.go"
         },
         "apis_simple": {
-            "source": "cp_go_gin//apis_simple",
+            "source": "cp_go_gin@v0.0.1//apis_simple",
             "description": "RESTfulapi的存放位置",
             "default_path": "apis/{{ api_name }}.go"
         },
         "apis_namespace": {
-            "source": "cp_go_gin//apis_namespace",
+            "source": "cp_go_gin@v0.0.1//apis_namespace",
             "description": "RESTfulapi的存放位置",
             "default_path": "apis/{{ apinamespace }}namespace"
         },
         "downloads_init": {
-            "source": "cp_go_gin//downloads_init",
+            "source": "cp_go_gin@v0.0.1//downloads_init",
             "description": "",
             "default_path": "downloads/downloads.go"
         },
         "downloads_namespace": {
-            "source": "cp_go_gin//downloads_namespace",
+            "source": "cp_go_gin@v0.0.1//downloads_namespace",
             "description": "",
             "default_path": "downloads/{{ downloadnamespace }}namespace"
         },
         "events_init": {
-            "source": "cp_go_gin//events_init",
+            "source": "cp_go_gin@v0.0.1//events_init",
             "description": "sse接口定义位置",
             "default_path": "events/events.go"
         },
         "events_setting": {
-            "source": "cp_go_gin//events_setting",
+            "source": "cp_go_gin@v0.0.1//events_setting",
             "description": "sse接口定义位置",
             "default_path": "events/setting"
         },
         "events_namespace": {
-            "source": "cp_go_gin//events_namespace",
+            "source": "cp_go_gin@v0.0.1//events_namespace",
             "description": "sse接口定义位置",
             "default_path": "events/{{ eventnamespace }}namespace"
         },
         "main": {
-            "source": "cp_go_gin//main",
+            "source": "cp_go_gin@v0.0.1//main",
             "description": "入口函数位置",
             "default_path": "main.go"
         },
         "models": {
-            "source": "cp_go_gin//models",
+            "source": "cp_go_gin@v0.0.1//models",
             "description": "数据模型存放位置,治理使用xormplus作为orm",
             "default_path": "models"
         },
@@ -132,12 +132,12 @@
             "default_path": "serv"
         },
         "docker-compose": {
-            "source": "cp_dockercompose//server_standalone",
+            "source": "cp_dockercompose@v0.0.2//server_standalone",
             "description": "通用的服务使用的dockercompose,适用于调试",
             "default_path": "docker-compose.yml"
         },
         "dockerfile": {
-            "source": "cp_dockerfiles//go_http_pure_dockerfile",
+            "source": "cp_dockerfiles@v0.0.1//go_http_pure_dockerfile",
             "description": "构造gin项目的dockerfile",
             "default_path": "dockerfile"
         }
