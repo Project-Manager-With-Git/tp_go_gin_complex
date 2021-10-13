@@ -9,16 +9,20 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
-
+	"strings"
 	"{{ app_name }}/apis"
+	"{{ app_name }}/auth"
 	"{{ app_name }}/downloads"
 	"{{ app_name }}/events"
 	"{{ app_name }}/models"
+	"time"
 
 	_ "{{ app_name }}/docs"
 
+	redis "github.com/Golang-Tools/redishelper/proxy"
+
 	log "github.com/Golang-Tools/loggerhelper"
+	"github.com/Golang-Tools/sqlhelper"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -28,16 +32,17 @@ import (
 )
 
 type Serv struct {
-	App_Version       string `json:"app_version" jsonschema:"required,title=v,description=应用版本"`
-	App_Name          string `json:"app_name" jsonschema:"required,title=n,description=应用名"`
-	Log_Level         string `json:"log_level" jsonschema:"required,title=l,description=log等级,enum=TRACE,enum=DEBUG,enum=INFO,enum=WARN,enum=ERROR"`
-	Address           string `json:"address" jsonschema:"required,title=a,description=启动地址"`
-	Published_Address string `json:"published_address" jsonschema:"title=p,description=外部访问地址"`
+	App_Version        string `json:"app_version" jsonschema:"required,title=v,description=应用版本"`
+	App_Name           string `json:"app_name" jsonschema:"required,title=n,description=应用名"`
+	Log_Level          string `json:"log_level" jsonschema:"required,title=l,description=log等级,enum=TRACE,enum=DEBUG,enum=INFO,enum=WARN,enum=ERROR"`
+	Address            string `json:"address" jsonschema:"required,title=a,description=启动地址"`
+	Published_Address  string `json:"published_address" jsonschema:"title=p,description=外部访问地址"`
+	Published_Protocol string `json:"published_protocol" jsonschema:"required,description=外部访问地址的对应协议,enum=http,enum=https"`
 
-	Cors_Allow_Origins     []string `json:"cors_allow_origins" jsonschema:"description=跨域允许的域名"`
-	Cors_Allow_Credentials bool     `json:"cors_allow_credentials" jsonschema:"description=跨域是否需要证书"`
-	Cors_Allow_Headers     []string `json:"cors_allow_headers" jsonschema:"description=跨域允许的头"`
-	Cors_Expose_Headers    []string `json:"cors_expose_headers" jsonschema:"description=跨域暴露的头"`
+	Cros_Allow_Origins     []string `json:"cros_allow_origins" jsonschema:"description=跨域允许的域名"`
+	Cros_Allow_Credentials bool     `json:"cros_allow_credentials" jsonschema:"description=跨域是否需要证书"`
+	Cros_Allow_Headers     []string `json:"cros_allow_headers" jsonschema:"description=跨域允许的头"`
+	Cros_Expose_Headers    []string `json:"cros_expose_headers" jsonschema:"description=跨域暴露的头"`
 
 	Static_Page_Dir   string `json:"static_page_dir" jsonschema:"description=静态页面存放的文件夹"`
 	Static_Source_Dir string `json:"static_source_dir" jsonschema:"description=静态资源存放的文件夹"`
@@ -47,14 +52,37 @@ type Serv struct {
 	Ca_Cert_Path    string `json:"ca_cert_path" jsonschema:"description=根证书位置"`
 	Client_Crl_Path string `json:"client_crl_path" jsonschema:"description=客户端证书黑名单"`
 
-	DB_URL string `json:"db_url" jsonschema:"required,description=数据库连接url"`
+	/**
+	auth模块使用的配置,如果不用auth模块可以注释掉
+	*/
+	Auth_Secret                  string `json:"auth_secret" jsonschema:"required,title=s,description=应用秘钥用于auth"`
+	Auth_DB_URL                  string `json:"auth_db_url" jsonschema:"required,description=数据库连接url"`
+	Auth_DB_Query_Timeout_MS     int    `json:"auth_db_query_timeout_ms" jsonschema:"description=设置访问数据库时的请求超时单位ms"`
+	Auth_DB_Max_Open_Conns       int    `json:"auth_db_max_open_conns" jsonschema:"description=设置访问数据库时的最大连接数"`
+	Auth_DB_Conn_Max_Lifetime_MS int    `json:"auth_db_conn_max_lifttime_ms" jsonschema:"description=设置访问数据库时的最大连接超时时间"`
+	Auth_DB_Max_Idle_Conns       int    `json:"auth_db_max_idle_conns" jsonschema:"description=设置访问数据库时的最大空闲连接"`
+	Auth_DB_Conn_Max_IdleTime_MS int    `json:"auth_db_conn_max_idletime_ms" jsonschema:"description=设置访问数据库时的空闲连接最大过期连接"`
 
-	RedisURL            string `json:"redis_url" jsonschema:"required,description=连接redis的url"`
-	RedisQueryTimeoutMS int    `json:"redis_query_timeout_ms" jsonschema:"required,description=请求redis的超时最大时间"`
-	app                 *gin.Engine
+	/**
+	业务配置
+	*/
+	// 数据库配置
+	DB_URL                  string `json:"db_url" jsonschema:"required,description=数据库连接url"`
+	DB_Query_Timeout_MS     int    `json:"db_query_timeout_ms" jsonschema:"description=设置访问数据库时的请求超时单位ms"`
+	DB_Max_Open_Conns       int    `json:"db_max_open_conns" jsonschema:"description=设置访问数据库时的最大连接数"`
+	DB_Conn_Max_Lifetime_MS int    `json:"db_conn_max_lifttime_ms" jsonschema:"description=设置访问数据库时的最大连接超时时间"`
+	DB_Max_Idle_Conns       int    `json:"db_max_idle_conns" jsonschema:"description=设置访问数据库时的最大空闲连接"`
+	DB_Conn_Max_IdleTime_MS int    `json:"db_conn_max_idletime_ms" jsonschema:"description=设置访问数据库时的空闲连接最大过期连接"`
+
+	Redis_URL              string `json:"redis_url" jsonschema:"required,description=redis连接url"`
+	Redis_Query_Timeout_MS int    `json:"redis_query_timeout_ms" jsonschema:"required,description=redis连接url"`
+	//这里开始设置其他业务配置
+
+	app *gin.Engine `json:"-"`
 }
 
-func (s *Serv) runserv() {
+// Runserv 运行服务
+func (s *Serv) Runserv() {
 	srv := &http.Server{
 		Addr:    s.Address,
 		Handler: s.app,
@@ -122,76 +150,200 @@ func (s *Serv) runserv() {
 	log.Info("Server exiting")
 }
 
-func (s *Serv) Main() {
-	// 初始化log
-	log.Init(s.Log_Level, map[string]interface{}{
-		"app_version": s.App_Version,
-		"app_name":    s.App_Name,
-	})
-
-	s.app = gin.New()
-
-	//初始化数据模型
-	models.Init(s.DB_URL)
-
-	// 跨域
-	// router.Router.Use(cors.Default())
+// InitCors 初始化跨域设置
+func (s *Serv) InitCors() {
 	corsconf := cors.DefaultConfig()
-	schema := "http"
-	if s.Serv_Cert_Path != "" && s.Serv_Key_Path != "" {
-		schema = "https"
-	}
-	corsconf.AllowOrigins = []string{fmt.Sprintf("%s://%s", schema, s.Address)}
+	corsconf.AllowOrigins = []string{fmt.Sprintf("%s://%s", s.Published_Protocol, s.Address)}
 	if s.Published_Address != "" {
-		corsconf.AllowOrigins = append(corsconf.AllowOrigins, fmt.Sprintf("%s://%s", schema, s.Published_Address))
+		corsconf.AllowOrigins = append(corsconf.AllowOrigins, fmt.Sprintf("%s://%s", s.Published_Protocol, s.Published_Address))
 	}
-	if s.Cors_Allow_Origins != nil {
-		corsconf.AllowOrigins = append(corsconf.AllowOrigins, s.Cors_Allow_Origins...)
+	if s.Cros_Allow_Origins != nil {
+		corsconf.AllowOrigins = append(corsconf.AllowOrigins, s.Cros_Allow_Origins...)
 	}
-	corsconf.AllowCredentials = s.Cors_Allow_Credentials
-	if s.Cors_Allow_Headers != nil {
-		for _, header := range s.Cors_Allow_Headers {
+	if s.Log_Level == "DEBUG" {
+		hostinfo := strings.Split(s.Address, ":")
+		if len(hostinfo) == 2 {
+			corsconf.AllowOrigins = append(corsconf.AllowOrigins, fmt.Sprintf("%s://%s:%s", s.Published_Protocol, "localhost", hostinfo[1]))
+		} else {
+			corsconf.AllowOrigins = append(corsconf.AllowOrigins, fmt.Sprintf("%s://%s", s.Published_Protocol, "localhost"))
+		}
+	}
+	corsconf.AllowCredentials = s.Cros_Allow_Credentials
+	if s.Cros_Allow_Headers != nil {
+		for _, header := range s.Cros_Allow_Headers {
 			corsconf.AddAllowHeaders(header)
 		}
 	}
-	if s.Cors_Expose_Headers != nil {
-		for _, header := range s.Cors_Expose_Headers {
+	if s.Cros_Expose_Headers != nil {
+		for _, header := range s.Cros_Expose_Headers {
 			corsconf.AddExposeHeaders(header)
 		}
 	}
-	log.Info("cros config", log.Dict{"config": corsconf})
+	log.Info("cros config",
+		log.Dict{
+			"AllowOrigins":     corsconf.AllowOrigins,
+			"AllowCredentials": corsconf.AllowCredentials,
+			"AllowHeaders":     corsconf.AllowHeaders,
+			"ExposeHeaders":    corsconf.ExposeHeaders,
+		})
 	s.app.Use(cors.New(corsconf))
+}
 
-	// log
-	s.app.Use(ginlogrus.Logger(log.Logger), gin.Recovery())
-
+//InitStaticBind 绑定url对应的静态页
+func (s *Serv) InitStaticBind() {
 	//注册静态路由
 	if s.Static_Page_Dir != "" {
 		s.app.Use(static.Serve("/", static.LocalFile(s.Static_Page_Dir, false)))
 	}
+
 	if s.Static_Source_Dir != "" {
 		s.app.Use(static.Serve("/static", static.LocalFile(s.Static_Source_Dir, false)))
 	}
 	if s.Log_Level == "DEBUG" {
-		url := ginSwagger.URL("http://localhost:5000/swagger/doc.json") // The url pointing to API definition
-		s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+		if s.Published_Address != "" {
+			url := ginSwagger.URL(fmt.Sprintf("%s://%s/swagger/doc.json", s.Published_Protocol, s.Published_Address)) // The url pointing to API definition
+			s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+		} else {
+			url := ginSwagger.URL(fmt.Sprintf("%s://%s/swagger/doc.json", s.Published_Protocol, s.Address)) // The url pointing to API definition
+			s.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+		}
 	}
-	apis.Init(s.app)
-	downloads.Init(s.app)
-	events.Init(s.app, s.RedisURL, s.RedisQueryTimeoutMS)
+}
+
+//InitModels 初始化业务用的数据模型组件,使用默认代理对象
+func (s *Serv) InitModels() func() {
+	//先初始化数据模型模块挂载代理的回调
+	models.Init()
+	// 配置数据库
+	dbinitopts := []sqlhelper.Option{
+		sqlhelper.WithURL(s.DB_URL),
+		sqlhelper.WithDiscardUnknownColumns(),
+	}
+	if s.DB_Query_Timeout_MS > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithQueryTimeoutMS(s.DB_Query_Timeout_MS))
+	}
+	if s.DB_Max_Open_Conns > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithMaxOpenConns(s.DB_Max_Open_Conns))
+	}
+	if s.DB_Conn_Max_Lifetime_MS > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxLifetimeMS(s.DB_Conn_Max_Lifetime_MS))
+	}
+	if s.DB_Max_Idle_Conns > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithMaxIdleConns(s.DB_Max_Idle_Conns))
+	}
+	if s.DB_Conn_Max_IdleTime_MS > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxIdleTimeMS(s.DB_Conn_Max_IdleTime_MS))
+	}
+	if s.Log_Level == "DEBUG" {
+		dbinitopts = append(dbinitopts, sqlhelper.WithLogger(log.Logger))
+	}
+	err := sqlhelper.DB.Init(dbinitopts...)
+	if err != nil {
+		log.Error("config db init error", log.Dict{"error": err.Error()})
+		os.Exit(1)
+	}
+	log.Debug("config db ok")
+	redisopts := []redis.Option{redis.WithURL(s.Redis_URL)}
+	if s.Redis_Query_Timeout_MS > 0 {
+		redisopts = append(redisopts, redis.WithQueryTimeoutMS(s.Redis_Query_Timeout_MS))
+	}
+
+	redis.Proxy.Init(redisopts...)
+	//其他配置比如redis,etcd等可以从这里开始
+	log.Debug("init models")
+	return func() {
+		sqlhelper.DB.Close()
+		redis.Proxy.Close()
+	}
+}
+
+//InitAuth 初始化auth模块
+func (s *Serv) InitAuth() auth.Close {
+	dbinitopts := []sqlhelper.Option{
+		sqlhelper.WithURL(s.Auth_DB_URL),
+		sqlhelper.WithDiscardUnknownColumns(),
+	}
+	if s.Auth_DB_Query_Timeout_MS > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithQueryTimeoutMS(s.Auth_DB_Query_Timeout_MS))
+	}
+	if s.Auth_DB_Max_Open_Conns > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithMaxOpenConns(s.Auth_DB_Max_Open_Conns))
+	}
+	if s.Auth_DB_Conn_Max_Lifetime_MS > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxLifetimeMS(s.Auth_DB_Conn_Max_Lifetime_MS))
+	}
+	if s.Auth_DB_Max_Idle_Conns > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithMaxIdleConns(s.Auth_DB_Max_Idle_Conns))
+	}
+	if s.Auth_DB_Conn_Max_IdleTime_MS > 0 {
+		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxIdleTimeMS(s.Auth_DB_Conn_Max_IdleTime_MS))
+	}
+	if s.Log_Level == "DEBUG" {
+		dbinitopts = append(dbinitopts, sqlhelper.WithLogger(log.Logger))
+	}
+	// 如果有其他auth设置可以在这里添加
+	closeauth, err := auth.Init(
+		s.app,
+		s.Auth_Secret,
+		auth.WithDBProxyInitOpts(dbinitopts...),
+		//初始化api,download,等绑定url
+		auth.WithApiBinders(
+			apis.InitWithAuthCheck,
+			downloads.InitWithAuthCheck,
+			events.InitWithAuthCheck,
+		),
+	)
+	if err != nil {
+		log.Error("auth init error", log.Dict{"error": err.Error()})
+		os.Exit(1)
+	}
+	log.Debug("auth init ok")
+	return closeauth
+}
+
+// Main 入口函数
+func (s *Serv) Main() {
+	s.app = gin.New()
+	// 初始化log
+	log.Init(log.WithLevel(s.Log_Level),
+		log.AddExtField("app_name", s.App_Name),
+		log.AddExtField("app_version", s.App_Version),
+	)
+	// log
+	s.app.Use(ginlogrus.Logger(log.Logger), gin.Recovery())
+	log.Info("serv get config", log.Dict{"config": s})
+
+	// 设置跨域
+	s.InitCors()
+
+	// 设置数据模型
+	modelsclose := s.InitModels()
+	defer modelsclose()
+	// 路径匹配绑定静态页面
+	s.InitStaticBind()
+
+	// 如果访问权限做校验的话
+	authclose := s.InitAuth()
+	defer authclose()
+	// 如果访问权限不做校验
+	//apis.Init(s.app)
+	//downloads.Init(s.app)
+	//events.Init(s.app)
 	// 启动服务
-	s.runserv()
+	s.Runserv()
 }
 
 var ServNode = Serv{
-	App_Version:         "1.0.0",
-	App_Name:            "{{ app_name }}",
-	Log_Level:           "DEBUG",
-	Address:             "0.0.0.0:5000",
-	DB_URL:              "sqlite://:memory:",
-	RedisURL:            "redis://localhost",
-	RedisQueryTimeoutMS: 50,
-	Cors_Allow_Origins:  []string{},
-	Cors_Allow_Headers:  []string{},
-	Cors_Expose_Headers: []string{},
+	App_Version:        "0.0.1",
+	App_Name:           "{{ app_name }}",
+	Log_Level:          "DEBUG",
+	Address:            "0.0.0.0:5000",
+	Published_Protocol: "http",
+	// DB_URL:              "sqlite://:memory:",
+	Auth_Secret:         "a secret",
+	Auth_DB_URL:         "sqlite://auth.db",
+	DB_URL:              "sqlite://test.db",
+	Cros_Allow_Origins:  []string{},
+	Cros_Allow_Headers:  []string{},
+	Cros_Expose_Headers: []string{},
 }
