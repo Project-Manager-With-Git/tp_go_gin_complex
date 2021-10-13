@@ -60,38 +60,38 @@
         }
     },
     "test": {
-        "source": "cp_go_gin//test",
+        "source": "cp_go_gin@v0.0.2//test",
         "default_path": "servtest"
     },
     "components": {
         "auth": {
-            "source": "cp_go_gin//simple_auth",
+            "source": "cp_go_gin@v0.0.2//simple_auth",
             "description": "简易权限验证模块",
             "default_path": "auth"
         },
         "apis": {
-            "source": "cp_go_gin//apis",
+            "source": "cp_go_gin@v0.0.2//apis",
             "description": "RESTfulapi的存放位置",
             "default_path": "apis"
         },
         "downloads": {
-            "source": "cp_go_gin//downloads",
+            "source": "cp_go_gin@v0.0.2//downloads",
             "description": "下载接口",
             "default_path": "downloads"
         },
       
         "events": {
-            "source": "cp_go_gin//events",
+            "source": "cp_go_gin@v0.0.2//events",
             "description": "sse接口定义位置",
             "default_path": "events"
         },
         "main": {
-            "source": "cp_go_gin//main",
+            "source": "cp_go_gin@v0.0.2//main",
             "description": "入口函数位置",
             "default_path": "main.go"
         },
         "models": {
-            "source": "cp_go_gin//models",
+            "source": "cp_go_gin@v0.0.2//models",
             "description": "数据模型存放位置",
             "default_path": "models"
         },
