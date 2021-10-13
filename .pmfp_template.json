@@ -64,6 +64,11 @@
         "default_path": "servtest"
     },
     "components": {
+        "auth": {
+            "source": "cp_go_gin//simple_auth",
+            "description": "简易权限验证模块",
+            "default_path": "auth"
+        },
         "apis": {
             "source": "cp_go_gin//apis",
             "description": "RESTfulapi的存放位置",
