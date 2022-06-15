@@ -19,10 +19,10 @@ import (
 
 	_ "{{ app_name }}/docs"
 
-	redis "github.com/Golang-Tools/redishelper/proxy"
+	"github.com/Golang-Tools/optparams"
 
-	log "github.com/Golang-Tools/loggerhelper"
-	"github.com/Golang-Tools/sqlhelper"
+	log "github.com/Golang-Tools/loggerhelper/v2"
+	"github.com/Golang-Tools/sqlhelper/v2/bunproxy"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -32,17 +32,17 @@ import (
 )
 
 type Serv struct {
-	App_Version        string `json:"app_version" jsonschema:"required,title=v,description=应用版本"`
-	App_Name           string `json:"app_name" jsonschema:"required,title=n,description=应用名"`
-	Log_Level          string `json:"log_level" jsonschema:"required,title=l,description=log等级,enum=TRACE,enum=DEBUG,enum=INFO,enum=WARN,enum=ERROR"`
-	Address            string `json:"address" jsonschema:"required,title=a,description=启动地址"`
+	App_Version        string `json:"app_version" jsonschema:"required,title=v,description=应用版本,default={{ version }}"`
+	App_Name           string `json:"app_name" jsonschema:"required,title=n,description=应用名,default={{ app_name }}"`
+	Log_Level          string `json:"log_level" jsonschema:"required,title=l,description=log等级,enum=TRACE,enum=DEBUG,enum=INFO,enum=WARN,enum=ERROR,default=DEBUG"`
+	Address            string `json:"address" jsonschema:"required,title=a,description=启动地址,default=0.0.0.0:5000"`
 	Published_Address  string `json:"published_address" jsonschema:"title=p,description=外部访问地址"`
-	Published_Protocol string `json:"published_protocol" jsonschema:"required,description=外部访问地址的对应协议,enum=http,enum=https"`
+	Published_Protocol string `json:"published_protocol" jsonschema:"required,description=外部访问地址的对应协议,enum=http,enum=https,default=http"`
 
-	Cros_Allow_Origins     []string `json:"cros_allow_origins" jsonschema:"description=跨域允许的域名"`
+	Cros_Allow_Origins     []string `json:"cros_allow_origins" jsonschema:"nullable,description=跨域允许的域名"`
 	Cros_Allow_Credentials bool     `json:"cros_allow_credentials" jsonschema:"description=跨域是否需要证书"`
-	Cros_Allow_Headers     []string `json:"cros_allow_headers" jsonschema:"description=跨域允许的头"`
-	Cros_Expose_Headers    []string `json:"cros_expose_headers" jsonschema:"description=跨域暴露的头"`
+	Cros_Allow_Headers     []string `json:"cros_allow_headers" jsonschema:"nullable,description=跨域允许的头"`
+	Cros_Expose_Headers    []string `json:"cros_expose_headers" jsonschema:"nullable,description=跨域暴露的头"`
 
 	Static_Page_Dir   string `json:"static_page_dir" jsonschema:"description=静态页面存放的文件夹"`
 	Static_Source_Dir string `json:"static_source_dir" jsonschema:"description=静态资源存放的文件夹"`
@@ -55,27 +55,30 @@ type Serv struct {
 	/**
 	auth模块使用的配置,如果不用auth模块可以注释掉
 	*/
-	Auth_Secret                  string `json:"auth_secret" jsonschema:"required,title=s,description=应用秘钥用于auth"`
-	Auth_DB_URL                  string `json:"auth_db_url" jsonschema:"required,description=数据库连接url"`
+	Use_Auth                     bool   `json:"use_auth" jsonschema:"required,description=激活使用auth模块"`
+	Auth_Secret                  string `json:"auth_secret" jsonschema:"required,title=s,description=应用秘钥用于auth,default=a_secret"`
+	Auth_DB_URL                  string `json:"auth_db_url" jsonschema:"required,description=数据库连接url,default=sqlite://auth.db"`
 	Auth_DB_Query_Timeout_MS     int    `json:"auth_db_query_timeout_ms" jsonschema:"description=设置访问数据库时的请求超时单位ms"`
 	Auth_DB_Max_Open_Conns       int    `json:"auth_db_max_open_conns" jsonschema:"description=设置访问数据库时的最大连接数"`
 	Auth_DB_Conn_Max_Lifetime_MS int    `json:"auth_db_conn_max_lifttime_ms" jsonschema:"description=设置访问数据库时的最大连接超时时间"`
 	Auth_DB_Max_Idle_Conns       int    `json:"auth_db_max_idle_conns" jsonschema:"description=设置访问数据库时的最大空闲连接"`
 	Auth_DB_Conn_Max_IdleTime_MS int    `json:"auth_db_conn_max_idletime_ms" jsonschema:"description=设置访问数据库时的空闲连接最大过期连接"`
 
+	//event设置
+	Event_Channel_Redis_URL              string `json:"event_channel_redis_url" jsonschema:"required,description=event使用的redis连接url,default=redis://localhost:6379/2"`
+	Event_Channel_Redis_Query_Timeout_MS int    `json:"event_channel_redis_query_timeout_ms" jsonschema:"required,description=event使用redis连接url,default=50"`
+
 	/**
 	业务配置
 	*/
 	// 数据库配置
-	DB_URL                  string `json:"db_url" jsonschema:"required,description=数据库连接url"`
-	DB_Query_Timeout_MS     int    `json:"db_query_timeout_ms" jsonschema:"description=设置访问数据库时的请求超时单位ms"`
-	DB_Max_Open_Conns       int    `json:"db_max_open_conns" jsonschema:"description=设置访问数据库时的最大连接数"`
+	DB_URL                  string `json:"db_url" jsonschema:"required,description=数据库连接url,default=sqlite://test.db"`
+	DB_Query_Timeout_MS     int    `json:"db_query_timeout_ms" jsonschema:"description=设置访问数据库时的请求超时单位ms,default=50"`
+	DB_Max_Open_Conns       int    `json:"db_max_open_conns" jsonschema:"description=设置访问数据库时的最大连接数,default=5"`
 	DB_Conn_Max_Lifetime_MS int    `json:"db_conn_max_lifttime_ms" jsonschema:"description=设置访问数据库时的最大连接超时时间"`
-	DB_Max_Idle_Conns       int    `json:"db_max_idle_conns" jsonschema:"description=设置访问数据库时的最大空闲连接"`
+	DB_Max_Idle_Conns       int    `json:"db_max_idle_conns" jsonschema:"description=设置访问数据库时的最大空闲连接,default=3"`
 	DB_Conn_Max_IdleTime_MS int    `json:"db_conn_max_idletime_ms" jsonschema:"description=设置访问数据库时的空闲连接最大过期连接"`
 
-	Redis_URL              string `json:"redis_url" jsonschema:"required,description=redis连接url"`
-	Redis_Query_Timeout_MS int    `json:"redis_query_timeout_ms" jsonschema:"required,description=redis连接url"`
 	//这里开始设置其他业务配置
 
 	app *gin.Engine `json:"-"`
@@ -211,87 +214,71 @@ func (s *Serv) InitStaticBind() {
 }
 
 //InitModels 初始化业务用的数据模型组件,使用默认代理对象
+//注意先初始化models,再初始化其中使用的proxy
 func (s *Serv) InitModels() func() {
 	//先初始化数据模型模块挂载代理的回调
 	models.Init()
-	// 配置数据库
-	dbinitopts := []sqlhelper.Option{
-		sqlhelper.WithURL(s.DB_URL),
-		sqlhelper.WithDiscardUnknownColumns(),
+	// 配置用到的数据库
+	dbinitopts := []optparams.Option[bunproxy.Options]{
+		bunproxy.WithDiscardUnknownColumns(),
 	}
 	if s.DB_Query_Timeout_MS > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithQueryTimeoutMS(s.DB_Query_Timeout_MS))
+		dbinitopts = append(dbinitopts, bunproxy.WithQueryTimeoutMS(s.DB_Query_Timeout_MS))
 	}
 	if s.DB_Max_Open_Conns > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithMaxOpenConns(s.DB_Max_Open_Conns))
+		dbinitopts = append(dbinitopts, bunproxy.WithMaxOpenConns(s.DB_Max_Open_Conns))
 	}
 	if s.DB_Conn_Max_Lifetime_MS > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxLifetimeMS(s.DB_Conn_Max_Lifetime_MS))
+		dbinitopts = append(dbinitopts, bunproxy.WithConnMaxLifetimeMS(s.DB_Conn_Max_Lifetime_MS))
 	}
 	if s.DB_Max_Idle_Conns > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithMaxIdleConns(s.DB_Max_Idle_Conns))
+		dbinitopts = append(dbinitopts, bunproxy.WithMaxIdleConns(s.DB_Max_Idle_Conns))
 	}
 	if s.DB_Conn_Max_IdleTime_MS > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxIdleTimeMS(s.DB_Conn_Max_IdleTime_MS))
+		dbinitopts = append(dbinitopts, bunproxy.WithConnMaxIdleTimeMS(s.DB_Conn_Max_IdleTime_MS))
 	}
-	if s.Log_Level == "DEBUG" {
-		dbinitopts = append(dbinitopts, sqlhelper.WithLogger(log.Logger))
-	}
-	err := sqlhelper.DB.Init(dbinitopts...)
+
+	err := bunproxy.Default.Init(s.DB_URL, dbinitopts...)
 	if err != nil {
 		log.Error("config db init error", log.Dict{"error": err.Error()})
 		os.Exit(1)
 	}
 	log.Debug("config db ok")
-	redisopts := []redis.Option{redis.WithURL(s.Redis_URL)}
-	if s.Redis_Query_Timeout_MS > 0 {
-		redisopts = append(redisopts, redis.WithQueryTimeoutMS(s.Redis_Query_Timeout_MS))
-	}
-
-	redis.Proxy.Init(redisopts...)
 	//其他配置比如redis,etcd等可以从这里开始
 	log.Debug("init models")
 	return func() {
-		sqlhelper.DB.Close()
-		redis.Proxy.Close()
+		bunproxy.Default.Close()
 	}
 }
 
 //InitAuth 初始化auth模块
 func (s *Serv) InitAuth() auth.Close {
-	dbinitopts := []sqlhelper.Option{
-		sqlhelper.WithURL(s.Auth_DB_URL),
-		sqlhelper.WithDiscardUnknownColumns(),
+	dbinitopts := []optparams.Option[bunproxy.Options]{
+		bunproxy.WithDiscardUnknownColumns(),
 	}
 	if s.Auth_DB_Query_Timeout_MS > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithQueryTimeoutMS(s.Auth_DB_Query_Timeout_MS))
+		dbinitopts = append(dbinitopts, bunproxy.WithQueryTimeoutMS(s.Auth_DB_Query_Timeout_MS))
 	}
 	if s.Auth_DB_Max_Open_Conns > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithMaxOpenConns(s.Auth_DB_Max_Open_Conns))
+		dbinitopts = append(dbinitopts, bunproxy.WithMaxOpenConns(s.Auth_DB_Max_Open_Conns))
 	}
 	if s.Auth_DB_Conn_Max_Lifetime_MS > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxLifetimeMS(s.Auth_DB_Conn_Max_Lifetime_MS))
+		dbinitopts = append(dbinitopts, bunproxy.WithConnMaxLifetimeMS(s.Auth_DB_Conn_Max_Lifetime_MS))
 	}
 	if s.Auth_DB_Max_Idle_Conns > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithMaxIdleConns(s.Auth_DB_Max_Idle_Conns))
+		dbinitopts = append(dbinitopts, bunproxy.WithMaxIdleConns(s.Auth_DB_Max_Idle_Conns))
 	}
 	if s.Auth_DB_Conn_Max_IdleTime_MS > 0 {
-		dbinitopts = append(dbinitopts, sqlhelper.WithConnMaxIdleTimeMS(s.Auth_DB_Conn_Max_IdleTime_MS))
+		dbinitopts = append(dbinitopts, bunproxy.WithConnMaxIdleTimeMS(s.Auth_DB_Conn_Max_IdleTime_MS))
 	}
-	if s.Log_Level == "DEBUG" {
-		dbinitopts = append(dbinitopts, sqlhelper.WithLogger(log.Logger))
-	}
+
 	// 如果有其他auth设置可以在这里添加
 	closeauth, err := auth.Init(
 		s.app,
 		s.Auth_Secret,
+		auth.WithDBURL(s.Auth_DB_URL),
 		auth.WithDBProxyInitOpts(dbinitopts...),
 		//初始化api,download,等绑定url
-		auth.WithApiBinders(
-			apis.InitWithAuthCheck,
-			downloads.InitWithAuthCheck,
-			events.InitWithAuthCheck,
-		),
 	)
 	if err != nil {
 		log.Error("auth init error", log.Dict{"error": err.Error()})
@@ -305,12 +292,12 @@ func (s *Serv) InitAuth() auth.Close {
 func (s *Serv) Main() {
 	s.app = gin.New()
 	// 初始化log
-	log.Init(log.WithLevel(s.Log_Level),
+	log.Set(log.WithLevel(s.Log_Level),
 		log.AddExtField("app_name", s.App_Name),
 		log.AddExtField("app_version", s.App_Version),
 	)
 	// log
-	s.app.Use(ginlogrus.Logger(log.Logger), gin.Recovery())
+	s.app.Use(ginlogrus.Logger(log.GetLogger()), gin.Recovery())
 	log.Info("serv get config", log.Dict{"config": s})
 
 	// 设置跨域
@@ -323,27 +310,32 @@ func (s *Serv) Main() {
 	s.InitStaticBind()
 
 	// 如果访问权限做校验的话
-	authclose := s.InitAuth()
-	defer authclose()
+	if s.Use_Auth {
+		authclose := s.InitAuth()
+		defer authclose()
+		apis.Init(s.app, apis.WithAppName(s.App_Name), apis.WithAppVersion(s.App_Version), apis.WithAuthMiddlewareFactory())
+		downloads.Init(s.app, downloads.WithAppName(s.App_Name), downloads.WithAppVersion(s.App_Version), downloads.WithAuthMiddlewareFactory())
+		events.Init(
+			s.app, events.WithAppName(s.App_Name),
+			events.WithAppVersion(s.App_Version),
+			events.WithURL(s.Event_Channel_Redis_URL),
+			events.WithQueryTimeoutMS(s.Event_Channel_Redis_Query_Timeout_MS),
+			events.WithAuthMiddlewareFactory())
+	} else {
+		//如果不需要验权
+		apis.Init(s.app, apis.WithAppName(s.App_Name), apis.WithAppVersion(s.App_Version))
+		downloads.Init(s.app, downloads.WithAppName(s.App_Name), downloads.WithAppVersion(s.App_Version), downloads.WithAuthMiddlewareFactory())
+		events.Init(
+			s.app, events.WithAppName(s.App_Name),
+			events.WithAppVersion(s.App_Version),
+			events.WithURL(s.Event_Channel_Redis_URL),
+			events.WithQueryTimeoutMS(s.Event_Channel_Redis_Query_Timeout_MS))
+	}
+
 	// 如果访问权限不做校验
 	//apis.Init(s.app)
 	//downloads.Init(s.app)
 	//events.Init(s.app)
 	// 启动服务
 	s.Runserv()
-}
-
-var ServNode = Serv{
-	App_Version:        "0.0.1",
-	App_Name:           "{{ app_name }}",
-	Log_Level:          "DEBUG",
-	Address:            "0.0.0.0:5000",
-	Published_Protocol: "http",
-	// DB_URL:              "sqlite://:memory:",
-	Auth_Secret:         "a secret",
-	Auth_DB_URL:         "sqlite://auth.db",
-	DB_URL:              "sqlite://test.db",
-	Cros_Allow_Origins:  []string{},
-	Cros_Allow_Headers:  []string{},
-	Cros_Expose_Headers: []string{},
 }
