@@ -277,6 +277,8 @@ func (s *Serv) InitAuth() auth.Close {
 		s.app,
 		s.Auth_Secret,
 		auth.WithDBURL(s.Auth_DB_URL),
+		auth.WithAppName(s.App_Name),
+		auth.WithAppVersion(s.App_Version),
 		auth.WithDBProxyInitOpts(dbinitopts...),
 		//初始化api,download,等绑定url
 	)
